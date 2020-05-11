@@ -1,0 +1,195 @@
+cw 9
+4
+SELECT column_name, data_type, data_precision, data_scale, data_length, nullable, DATA_DEFAULT   
+FROM  USER_TAB_COLUMNS
+WHERE table_name='ZATRUDNIENIA';
+
+5
+SELECT constraint_name, constraint_type 
+FROM USER_CONSTRAINTS
+WHERE table_name='ZATRUDNIENIA';
+
+6
+SELECT column_name, position
+FROM  USER_CONS_COLUMNS 
+WHERE constraint_name=(SELECT constraint_name 
+FROM USER_CONSTRAINTS
+WHERE table_name='KIEROWNICY' AND constraint_type='P');
+
+7
+SELECT * FROM USER_SEQUENCES;
+
+8
+SELECT ZATRUDNIENIA_SEQ.CURRVAL FROM DUAL;
+
+9
+ALTER TABLE zatrudnienia MODIFY(ID_W DEFAULT 1);
+ALTER TABLE zatrudnienia MODIFY(OD DEFAULT SYSDATE);
+INSERT INTO zatrudnienia VALUES(zatrudnienia_seq.nextval,27, default, NULL, default, 1400,1);
+
+10
+SELECT column_name,  table_name, data_default 
+FROM USER_TAB_COLUMNS
+WHERE data_default IS NOT NULL;
+
+11
+SELECT index_name FROM USER_INDEXES;
+
+12
+SELECT index_name, uniqueness FROM USER_INDEXES WHERE uniqueness='UNIQUE';
+
+13
+SELECT index_name,table_name, column_name FROM USER_IND_COLUMNS; 
+
+14
+SELECT constraint_name 
+FROM USER_CONSTRAINTS
+WHERE table_name='ZATRUDNIENIA' AND constraint_type='R';
+
+15
+SELECT column_name FROM USER_CONS_COLUMNS WHERE (table_name, constraint_name) IN 
+(SELECT table_name, constraint_name FROM USER_CONSTRAINTS WHERE constraint_type = 'R')
+AND(table_name, column_name) NOT IN(SELECT table_name, column_name FROM USER_IND_COLUMNS);
+
+//////10//////
+
+1
+BEGIN dbms_output.put_line(TO_DATE(SYSDATE,'dd/mm/yyyy'));
+END;
+/
+
+3a
+DECLARE 
+z_ile NUMBER;
+begin
+select count (id_pracownika) into z_ile
+from pracownicy where to_char(data_zatrudnienia,'yyyy')='2006';
+dbms_output.put_line(z_ile);
+END;
+/
+
+3b
+DECLARE 
+z_ile NUMBER;
+begin
+select count (id_pracownika) into z_ile
+from pracownicy where to_char(data_zatrudnienia,'yyyy')='2006';
+IF(mod(z_ile,2)=0)then
+dbms_output.put_line('Parzysta liczba pracownikow');
+ELSE
+dbms_output.put_line('Nieparzysta liczba pracownikow');
+END IF;
+END;
+/
+
+4a
+DECLARE 
+z_imie pracownicy.imie%TYPE;
+z_nazwisko pracownicy.nazwisko%TYPE;
+z_zawod pracownicy.zawod%TYPE;
+z_ile NUMBER;
+begin
+select imie, nazwisko, zawod, 12*pensja+NVL(dodatek,0) into z_imie, z_nazwisko, z_zawod, z_ile
+from pracownicy where id_pracownika=4;
+dbms_output.put_line(z_imie||' '|| z_nazwisko||' '|| z_zawod||' '|| z_ile);
+END;
+/
+
+5
+declare
+z_imie pracownicy.imie%TYPE;
+z_nazwisko pracownicy.nazwisko%TYPE;
+z_pensja pracownicy.pensja%TYPE;
+cursor abc is 
+select imie, nazwisko, pensja 
+from pracownicy where zawod in('KASJER','SPRZEDAWCA','MAGAZYNIER')
+ORDER BY 3 DESC;
+begin
+open abc;
+loop fetch abc into z_imie, z_nazwisko, z_pensja;
+exit when abc%NOTFOUND;
+dbms_output.put_line(INITCAP(z_imie)||' '|| INITCAP(z_nazwisko)||' '|| z_pensja);
+end loop;
+close abc;
+END;
+/
+
+7
+declare
+cursor abc is 
+select INITCAP(imie)imie, INITCAP(nazwisko)nazwisko, zawod, poziom
+from pracownicy join wyksztalcenie using(id_wyksztalcenia) 
+ORDER BY 2, 1;
+begin
+for i in abc loop
+dbms_output.put_line('Osoba:'||' '||i.imie||' '|| i.nazwisko||' '||'zawod:'||' '|| i.zawod||' '||'wyksztalcenie:'||' '||i.poziom);
+end loop;
+end;
+/
+
+///////////////11///////////////
+
+1
+DECLARE 
+z_ile NUMBER;
+begin
+select sum (pensja) into z_ile
+from pracownicy where plec='M';
+dbms_output.put_line(z_ile);
+END;
+/
+
+2
+a
+create or replace function f_plec_suma_pensji
+(p_plec pracownicy.plec%TYPE) return
+NUMBER IS 
+z_ile NUMBER;
+begin
+select sum (pensja) into z_ile
+from pracownicy where plec=p_plec;
+return z_ile;
+END;
+/
+declare
+z_suma NUMBER;
+begin
+z_suma:= f_plec_suma_pensji('K');
+dbms_output.put_line(z_suma);
+end;
+/
+begin
+dbms_output.put_line(f_plec_suma_pensji('K'));
+end;
+/
+b
+declare
+z_suma NUMBER;
+begin
+z_suma:= f_plec_suma_pensji('p');
+IF(z_suma IS NULL)then
+dbms_output.put_line('Zla plec');
+ELSE
+dbms_output.put_line(z_suma);
+end if;
+end;
+/
+c
+select text from USER_SOURCE
+where name='F_PLEC_SUMA_PENSJI'
+order by line;
+
+3
+DECLARE 
+cursor k_pracownicy is select imie, nazwisko, FLOOR(MONTHS_BETWEEN(SYSDATE,DATA_URODZENIA)/12)wiek 
+from pracownicy join placowki using(id_placowki)
+where nazwa='BIURO'
+order by nazwisko, imie;
+begin
+for r in k_pracownicy loop
+dbms_output.put_line(r.imie||' '|| r.nazwisko||' '|| r.wiek);
+end loop;
+END;
+/
+
+

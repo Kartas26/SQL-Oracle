@@ -1,0 +1,436 @@
+Utworzyæ w jêzyku SQL firmy ORACLE tabelê "studenci" sk³adaj¹c¹ siê z nastêpuj¹cych pól:
+*nr_studenta, które jest kluczem g³ównym i zawiera kolejne liczby naturalne
+*nazwisko i imie - pola tekstowe o d³ugoœci 15, niezawieraj¹cego wartoœci pustej
+*data_ur - zawiera daty
+*p³eæ - zawiera tylko wartoœæ K lub M
+Zadania
+a) utworzyæ tabelê "studenci" bez nazywania ograniczeñ, po czym obejrzeæ jej strukturê oraz sprawdziæ, ¿e znajduje siê w s³owniku. Obejrzeæ w s³owniku utworzone ograniczenia.
+DESC studenci;
+
+SELECT*
+FROM user_tables;
+
+SELECT *
+FROM user_objects
+WHERE object_type='Studenci';
+
+SELECT constraint_name, search_condition
+FROM user_constraints
+WHERE table_name='STUDENCI';
+
+/////////////////////////////////////////////
+
+CREATE TABLE studenci(
+nr_studenta NUMBER PRIMARY KEY,
+nazwisko VARCHAR2(15)NOT NULL,
+imie VARCHAR2(15)NOT NULL,
+data_ur DATE,
+plec CHAR(1)CHECK(plec='M' OR plec='K')
+);
+
+usuwanie DROPTABLE studenci;
+//////////////////////////////////////////////
+
+CREATE TABLE oceny_studentow(
+id_ocena NUMBER CONSTRAINT id_ocen_pk PRIMARY KEY,
+nr_studenta NUMBER,
+data_oceny DATE,
+ocena NUMBER(2,1) CONSTRAINT ocena_ch CHECK(ocena=2 OR ocena=2.5 OR ocena=3 OR ocena=3.5 OR ocena=4 OR ocena=4.5 OR ocena=5),
+slownie VARCHAR2(15) CONSTRAINT slownie_ch CHECK (slownie='ndst' OR slownie='ndst+' OR slownie='dst' OR slownie='dst+' OR slownie='dbr' OR slownie='dbr+' OR slownie='bd'),
+CONSTRAINT nr_studenta_fk FOREIGN KEY(nr_studenta) REFERENCES studenci(nr_studenta)
+);
+
+RENAME oceny_studentow TO oceny;
+
+Podczas tworzenia tabeli studenci utworzono pole nazwisko którego rozmiar jest 15, rozmiar jest za ma³y, ustawiæ 50 znaków
+
+ALTER TABLE studenci MODIFY (nazwisko VARCHAR2(50));
+
+Stworzyæ pole telefon zawieraj¹ce 7 cyfr
+
+ALTER TABLE studenci ADD (nr_telefonu CHAR(7));
+
+usun¹æ pole telefon
+
+ALTER TABLE studenci DROP COLUMN nr_telefonu;
+
+wiêkszoœæ studentów stanowi¹ mê¿czyŸni, uwzglêdniæ ten fakt w definicji tabeli studenci
+
+ALTER TABLE studenci MODIFY (plec DEFAULT 'M');
+
+w definicji tabeli studenci pominiêto pole semestr, utworzyæ. Pole semestr powinno zawieraæ dwie wartoœci: zimowy lub letni.
+
+ALTER TABLE studenci ADD (semestr VARCHAR2(6));
+ALTER TABLE studenci MODIFY (semestr VARCHAR2(6) CONSTRAINT semestr_ch CHECK (semestr='letni' OR semestr='zimowy'));
+ALTER TABLE studenci ADD  CONSTRAINT semestr_ch CHECK (semestr='letni' OR semestr='zimowy');
+
+Studenci:
+1. Tkaczyk Jerzy 15/10/1994 M zimowy
+2. Krawczyk Monika 19/05/1996 K zimowy
+3. Matczyk Maria 09/07/1998 K letni
+4. Balcerek Janusz 02/09/1992 M letni
+
+Oceny:
+1. 1 15/10/2017 5 bardzo dobry
+2. 2 19/10/2017 4.5 dobry+
+3. 2 21/10/2017 3.5 dostateczny+
+4. 3 21/10/2017 4 dobry
+
+INSERT INTO studenci VALUES(1, 'Tkaczyk', 'Jerzy', TO_DATE('15/10/1994', 'DD/MM/YYYY'), 'M', 'zimowy');
+INSERT INTO studenci VALUES(2, 'Krawczyk', 'Monika', TO_DATE('19/05/1996', 'DD/MM/YYYY'), 'K', 'zimowy');
+INSERT INTO studenci VALUES(3, 'Matczyk', 'Maria', TO_DATE('09/07/1998', 'DD/MM/YYYY'), 'K', 'letni');
+INSERT INTO studenci VALUES(4, 'Balcerek', 'Janusz', TO_DATE('02/09/1992', 'DD/MM/YYYY'), 'M', 'letni');
+
+INSERT INTO OCENY_STUDENTOW(id_ocena,nr_studenta,data_oceny,ocena,slownie) VALUES (1,1,TO_DATE('15/10/2017','DD/MM/YYYY'),5,'bd');
+INSERT INTO OCENY_STUDENTOW(id_ocena,nr_studenta,data_oceny,ocena,slownie) VALUES (2,2,TO_DATE('19/10/2017','DD/MM/YYYY'),4.5,'dbr+');
+INSERT INTO OCENY_STUDENTOW(id_ocena,nr_studenta,data_oceny,ocena,slownie) VALUES (3,2,TO_DATE('21/10/2017','DD/MM/YYYY'),3.5,'dst+');
+INSERT INTO OCENY_STUDENTOW(id_ocena,nr_studenta,data_oceny,ocena,slownie) VALUES (4,3,TO_DATE('21/10/2017','DD/MM/YYYY'),4,'dbr');
+
+zmiana wartoœci w wierszu
+
+UPDATE studenci SET imie='Marta', nazwisko='Marczyk' WHERE nr_studenta=3;
+
+wy³¹czyæ ograniczenie pola plec w tabeli studenci
+
+ALTER TABLE studenci DISABLE CONSTRAINT (nazwa);
+
+utworzyæ indeks o nazwie student na kolumnach nazwisko i imie posortowanych alfabetycznie, sprawdziæ istnienie indeksu
+
+SELECT* FROM user_indexes;
+CREATE INDEX student ON studenci(nazwisko ASC, imie ASC);
+
+CREATE SEQUENCE s_student
+INCREMENT BY 1
+START WITH 5
+MINVALUE 1
+MAXVALUE 999;
+
+INSERT INTO STUDENCI VALUES (s_student.nextval, 'Kartasiñski', 'Piotr', TO_DATE('16/03/1997', 'DD/MM/YYYY'), 'M', 'zimowy');
+
+CREATE SEQUENCE s_oceny
+INCREMENT BY 1
+START WITH 5
+MINVALUE 1
+MAXVALUE 9999;
+
+INSERT INTO oceny_studentow VALUES (s_oceny.nextval, 5, TO_DATE('27/11/2018', 'DD/MM/YYYY'), 4, 'dbr');
+
+CREATE TABLE studentki AS
+SELECT nr_studenta,imie,nazwisko,data_ur,plec,semestr
+FROM studenci
+WHERE plec='K';
+
+CREATE TABLE studentki2 (
+nr_studenta NUMBER PRIMARY KEY,
+nazwisko VARCHAR2(15)NOT NULL,
+imie VARCHAR2(15)NOT NULL,
+data_ur DATE,
+plec CHAR(1)CHECK(plec='K')
+);
+
+INSERT INTO studentki2
+SELECT * FROM studenci
+WHERE plec='K';
+
+
+
+
+Do polecenia Biblioteki ze strony prowadz¹cego
+
+CREATE TABLE czytelnicy(
+nr_karty VARCHAR2(5) CONSTRAINT nr_karty_pk PRIMARY KEY,
+nazwisko VARCHAR2(15)NOT NULL,
+imie VARCHAR2(15)NOT NULL,
+pesel CHAR(11)NOT NULL,
+data_ur DATE NOT NULL,
+plec CHAR(1)CHECK(plec='M' OR plec='K') NOT NULL,
+telefon CHAR(7)
+);
+
+CREATE TABLE wydawnictwa(
+id_wyd NUMBER CONSTRAINT id_wyd_pk PRIMARY KEY,
+nazwa VARCHAR2(50)NOT NULL,
+miasto VARCHAR2(50)NOT NULL,
+telefon CHAR(7)
+);
+
+CREATE TABLE ksiazki(
+sygn CHAR(4) CONSTRAINT sygn_pk PRIMARY KEY,
+id_wyd NUMBER,
+tytul VARCHAR2(50) NOT NULL,
+cena NUMBER CONSTRAINT cena_ch CHECK(cena>0),
+strony NUMBER CONSTRAINT strony_ch CHECK(strony>1),
+gatunek VARCHAR2(50) CONSTRAINT gatunek_ch CHECK(gatunek='powiesc' OR gatunek='powiesc historyczna' OR gatunek='dla dzieci' OR gatunek='wiersze' OR gatunek='kryminal' OR gatunek='powiesc science fistion' OR gatunek='ksiazka naukowa'),
+CONSTRAINT id_wyd_fk FOREIGN KEY(id_wyd) REFERENCES wydawnictwa(id_wyd)
+);
+
+
+CZARNY!!!!
+
+CREATE TABLE czytelnicy(
+nr_karty CHAR(5) CONSTRAINT nr_karty_pk PRIMARY KEY,
+nazwisko VARCHAR2(15) CONSTRAINT nazwisko_nn NOT NULL,
+imie VARCHAR2(15) CONSTRAINT imie_nn NOT NULL,
+pesel CHAR(11) CONSTRAINT pesel_nn NOT NULL,
+data_ur DATE,
+plec CHAR(1) CONSTRAINT plec_ch CHECK(plec='K' OR plec='M'),
+telefon CHAR(9)
+);
+
+CREATE TABLE wydawnictwa(
+id_wyd NUMBER CONSTRAINT id_wyd_pk PRIMARY KEY,
+nazwa VARCHAR2(50) CONSTRAINT wyd_nazwa_nn NOT NULL,
+miasto VARCHAR2(30) CONSTRAINT wyd_miasto_nn NOT NULL,
+telefon CHAR(9)
+);
+
+CREATE TABLE ksiazki(
+sygn CHAR(4) CONSTRAINT sygn_pk PRIMARY KEY,
+id_wyd NUMBER,
+tytul VARCHAR(50) CONSTRAINT ks_tytul_nn NOT NULL,
+cena NUMBER(3,2) CONSTRAINT ks_cena_nn NOT NULL,
+strony NUMBER,
+gatunek VARCHAR2(21) CONSTRAINT ks_gatunek_ch CHECK(gatunek='powiesc' OR gatunek='powiesc historyczna' OR gatunek='dla dzieci' OR gatunek='wiersze' OR gatunek='kryminal' OR gatunek='powiesc sience fiction' OR gatunek='ksiazka naukowa'),
+CONSTRAINT id_wyd_fk FOREIGN KEY(id_wyd) REFERENCES wydawnictwa(id_wyd)
+);
+
+CREATE TABLE pracownicy(
+id_prac NUMBER CONSTRAINT id_prac_pk PRIMARY KEY,
+nazwisko VARCHAR2(15) CONSTRAINT prac_nazwisko_nn NOT NULL,
+imie VARCHAR2(15) CONSTRAINT prac_imie_nn NOT NULL,
+plec CHAR(1) CONSTRAINT plec_ch CHECK(plec='K' OR plec='M'),
+data_ur DATE CHECK(data_ur<data_zatr),
+data_zatr DATE,
+szef_id
+);
+
+CREATE TABLE wypozyczenia(
+id_w NUMBER CONSTRAINT id_w_pk PRIMARY KEY,
+sygn CHAR(4),
+id_cz NUMBER,
+id_p NUMBER,
+data_w DATE CONSTRAINT data_w_nn NOT NULL,
+data_z DATE,
+kara NUMBER(5,2) CONSTRAINT kara_ch CHECK(kara>0),
+CONSTRAINT data_ch CHECK(data_w<data_z),
+CONSTRAINT sygn_ch CHECK(SUBSTR(sygn,1,1) BETWEEN 'A' AND 'Z' AND SUBSTR(sygn,2,1) BETWEEN 0 AND 9 AND SUBSTR(sygn,3,1) BETWEEN 0 AND 9 AND SUBSTR(sygn,4,1) BETWEEN 0 AND 9)
+); // do dokonczenia i poprawy, ostatnia linia do innych tabelek tez
+
+
+
+
+
+
+
+
+KADRY
+
+
+
+Wyœwitliæ id osób, ich nazwiska i imiona z tabeli, przy czym dokonaæ posortowania w porz¹dku alfabetycznym (2 sposobami)
+ID_OS    NAZWISKO     IMIE
+5        Duda         Barbara
+10       Kot          Adam
+7        Kot          Micha³
+
+1) SELECT id_os, INITCAP(nazwisko) nazwisko_osoby, INITCAP(imie1) imie_osoby
+   FROM osoby
+   ORDER BY 2 ASC, 3 ASC;
+2) ORDER BY nazwisko_osoby ASC, imie_osoby;
+3) ORDER BY INITCAP(nazwisko) ASC, INITCAP(imie1) ASC;
+
+ID_OS    PRACOWNIK
+5        Duda Barbara
+10       Kot Adam
+7        Kot Micha³
+
+SELECT id_os, INITCAP(nazwisko)||' '||INITCAP(imie1) pracownik
+FROM osoby
+ORDER BY 2 ASC;
+
+WYDZIAL      LITERA
+FIZYKA       F
+MATEMATYKA   M
+PRAWO        P
+
+SELECT UPPER(nazwa) wydzial, UPPER(SUBSTR(nazwa,1,1)) litera
+FROM wydzialy
+ORDER BY 2 ASC;
+
+Wyœwietliæ id osób, które kiedykolwiek b¹dŸ gdziekolwiek by³y lub s¹ zatrudnione
+SELECT DISTINCT id_os
+FROM zatrudnienia
+ORDER BY 1 ASC;
+
+Wyœwitliæ id osób, nazwiska, imiona oraz ich inicja³y w kolejnoœci alfabetycznej
+
+ID_OS    NAZWISKO     IMIE     INICJALY
+5        Duda         Barbara  D. B.
+10       Kot          Adam     K. A.
+7        Kot          Micha³   K. M.
+
+SELECT id_os, INITCAP(nazwisko) nazwisko_osoby, INITCAP(imie1) imie_osoby, UPPER(SUBSTR(nazwisko,1,1))||'.'||UPPER(SUBSTR(imie1,1,1))||'.' inicjaly
+FROM osoby
+ORDER BY 2 ASC, 3 ASC;
+
+Wyœwitliæ id osób, aktualnie pobieran¹ pensjê oraz zaokr¹glenie pensji do pe³nych tysiêcy
+PRACOWNIK   PENSJA  PELNE_TYS_ZL
+22          5000    5
+19          4500    4
+5           4300    4
+10          4000    4
+
+SELECT id_os, pensja, TRUNC(pensja/1000) pelne_tys_zl
+FROM zatrudnienia
+WHERE do IS NULL
+ORDER BY 2 DESC;
+
+KOMUNIKAT
+Pan Czech Adam - data urodzenia 71/04/11.
+Pani Drops Barbara - data urodzenia 63/05/22.
+
+SELECT DECODE(plec, 'K', 'Pani', 'M', 'Pan')||' '|| INITCAP(nazwisko)||' '|| INITCAP(imie1)||' - '|| data urodzenia||' '||d_ur||'.' KOMUNIKAT
+FROM osoby
+ORDER BY INITCAP(nazwisko) ASC, INITCAP(imie1) ASC;
+
+Obliczyæ dla poszczególnych osób liczbê pe³nych lat jakie zosta³y przepracowane w aktualnym miejscu zatrudnienia
+ID_OS  LATA_PRACY
+2      15
+7      10
+8      10
+19     8
+11     7
+
+SELECT id_os, TRUNC(MONTHS_BETWEEN(SYSDATE,OD)/12) LATA_PRACY FROM zatrudnienia WHERE do IS NULL ORDER BY 2 DESC, 1 ASC;
+
+Wyœwietliæ nazwiska i imiona w kolejnoœci alfabetycznej tych wszystkich osób, które w pierwszym imieniu maj¹ przynajmniej jedn¹ tlierê a
+
+SELECT nazwisko, INITCAP(imie1) imie
+FROM osoby
+WHERE imie1 LIKE '%a%' OR imie1 LIKE '%A%'
+ORDER BY 1 ASC;
+
+Wyœwietliæ dane takich osób, których nazwisko zaczyna siê na K i L oraz urodzi³y siê w miesi¹cach czerwiec, listopad i grudzieñ lub wyœwietliæ te kobiety, które maj¹ drugie imiê
+
+SELECT id_os, nazwisko, INITCAP(d_ur) data_urodzenia, INITCAP(imie1) imie, imie2, plec
+FROM osoby
+WHERE ((UPPER(SUBSTR(nazwisko,1,1)) LIKE '%K%' OR UPPER(SUBSTR(nazwisko,1,1)) LIKE '%L%')
+AND (TO_CHAR(d_ur,'mm')='06' OR TO_CHAR(d_ur,'mm')='11' OR TO_CHAR(d_ur,'mm')='12'))
+OR (plec='K' AND imie2 IS NOT NULL);
+
+Wyœwietliæ listê alfabetyczn¹ osób wraz z aktualnie pobieran¹ pensj¹
+
+SELECT o.id_os, o.nazwisko, INITCAP(o.imie1) imie, z.pensja
+FROM osoby o, zatrudnienia z
+WHERE o.id_os=z.id_os AND z.do IS NULL
+ORDER BY 2 ASC;
+
+SELECT o.id_os, o.nazwisko, INITCAP(o.imie1) imie, z.pensja
+FROM osoby o INNER JOIN zatrudnienia z ON o.id_os=z.id_os                       /////////// TU JEST JOIN
+WHERE z.do IS NULL
+ORDER BY 2 ASC;
+
+Wyœwietliæ wydruk
+ID_OS    OSOBA             OD
+10       Duda Barbara      10/03/1999
+5        Krawczyk Adam     05/03/2001
+20       Nowak Jan         01/09/1999
+14       Nowakowski Marek
+
+SELECT o.id_os, INITCAP(o.nazwisko)||' '||INITCAP(o.imie1) osoba, INITCAP(z.od) od
+FROM osoby o LEFT JOIN zatrudnienia z ON o.id_os=z.id_os;
+
+Lista osób niezatrudnionych
+
+SELECT o.id_os, INITCAP(o.nazwisko)||' '||INITCAP(o.imie1) osoba, INITCAP(z.od) od
+FROM osoby o LEFT JOIN zatrudnienia z ON o.id_os=z.id_os
+WHERE z.od IS NULL
+ORDER BY 2 ASC;
+
+KWERENDY AGREGUJ¥CE
+
+Wyœwietliæ datê urodzenia najstarszej osoby
+
+SELECT MIN(d_ur) najstarsza
+FROM osoby;
+
+Wyœwietliæ ile jest kobiet i mê¿czyzn
+
+SELECT plec, COUNT(plec) liczba_osob
+FROM osoby
+GROUP BY plec
+ORDER BY 2 DESC;
+
+WYDZIAL    LICZBA_OSOB
+matematyka 15
+prawo      15
+fizyka     12
+
+SELECT INITCAP(w.nazwa), COUNT(z.id_os) liczba_osob
+FROM wydzialy w JOIN zatrudnienia z ON w.id_w=z.id_w           ////////////////KOLEJNY JOIN
+WHERE z.do IS NULL
+GROUP BY INITCAP(w.nazwa)
+ORDER BY 2 DESC, 1 ASC;
+
+Wyœwietliæ wydzia³y które zatrudniaj¹ ponad 3 osób
+
+SELECT INITCAP(w.nazwa), COUNT(z.id_os) liczba_osob
+FROM wydzialy w JOIN zatrudnienia z ON w.id_w=z.id_w
+WHERE z.do IS NULL
+GROUP BY INITCAP(w.nazwa)
+HAVING COUNT(z.id_os)>3
+ORDER BY 2 DESC, 1 ASC;
+
+Wyœwietliæ dane osobowe najstarszej osoby z tabeli osoby, najstarszego mê¿czyzny, obu na raz
+SELECT INITCAP(imie1) imie, nazwisko, d_ur
+FROM osoby
+Where d_ur=(SELECT MIN(d_ur) FROM osoby);
+
+SELECT INITCAP(imie1) imie, nazwisko, d_ur
+FROM osoby
+Where plec='M' AND d_ur=(SELECT MIN(d_ur) FROM osoby WHERE plec='M');
+
+SELECT INITCAP(imie1) imie, nazwisko, d_ur
+FROM osoby
+Where plec='M' AND d_ur=(SELECT MIN(d_ur) FROM osoby WHERE plec='M')
+OR plec='K' AND d_ur=(SELECT MIN(d_ur) FROM osoby WHERE plec='K');
+
+SELECT o.plec, INITCAP(o.imie1) imie, o.nazwisko, o.d_ur
+FROM osoby o
+Where o.d_ur=(SELECT MIN(o1.d_ur) FROM osoby o1 WHERE o1.plec=o.plec);  ////to samo co wy¿ej
+
+Wyœwietliæ tê p³eæ, z której jest wpisana do tabeli osoby wiêksza iloœæ osób 2 sposoby
+CREATE OR REPLACE VIEW plec_licz_os AS
+SELECT plec, COUNT(id_os) liczba_osob
+FROM osoby
+GROUP BY plec
+ORDER BY 2 DESC;
+SELECT plec, liczba_osob
+FROM plec_licz_os
+WHERE liczba_osob=(SELECT MAX(liczba_osob) FROM plec_licz_os);
+
+WITH plec_liczba_os AS
+(SELECT plec, COUNT(id_os) liczba_osob
+FROM osoby
+GROUP BY plec)
+SELECT plec, liczba_osob
+FROM plec_liczba_os
+WHERE liczba_osob=(SELECT MAX(liczba_osob) FROM plec_liczba_os);
+
+Dla ka¿dego wydzia³u wyœwietliæ tê p³eæ, z której aktualnie zatrudniona jest najwiêksza iloœæ osób
+CREATE OR REPLACE VIEW plec_zatrudnionych AS
+SELECT INITCAP(w.nazwa) wydzial, o.plec, COUNT(o.id_os) liczba_osob
+FROM osoby o JOIN zatrudnienia z ON o.id_os=z.id_os JOIN wydzialy w ON w.id_w=z.id_w
+WHERE z.do IS NULL
+GROUP BY INITCAP(w.nazwa), o.plec
+ORDER BY 3 DESC;
+SELECT wmp.wydzial, wmp.plec, wmp.liczba_osob
+FROM plec_zatrudnionych wmp
+WHERE wmp.liczba_osob=(SELECT MAX(wmp1.liczba_osob) FROM plec_zatrudnionych  wmp1 WHERE wmp1.wydzial=wmp.wydzial);
+
+Wyœwietliæ miesi¹ce w których urodzi³a siê wiêcej ni¿ jedna osoba
+SELECT TO_CHAR(d_ur,'MONTH') miesiac, COUNT(id_os) liczba_os
+FROM osoby
+GROUP BY TO_CHAR(d_ur,'MONTH')
+HAVING COUNT(id_os)>1
+ORDER BY 2 DESC;

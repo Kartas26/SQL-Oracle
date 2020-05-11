@@ -1,0 +1,165 @@
+--CWICZENIA 3
+--zad1
+select nazwisko 
+from pracownicy 
+where id_placowki = 1
+INTERSECT
+select nazwisko
+from pracownicy 
+where id_placowki = 6;
+
+--zad2
+select nazwisko "Nazwiska - roznice"
+from pracownicy join placowki using(id_placowki)
+where nazwa = 'BIURO'
+MINUS
+select nazwisko 
+from pracownicy join placowki using(id_placowki)
+where nazwa = 'SKLEP I'
+order by 1;
+
+--zad3
+select nazwisko||'*' 
+from pracownicy 
+where id_placowki = 1
+UNION ALL 
+select nazwisko 
+from pracownicy
+where id_placowki !=1
+order by 1;
+
+select case when id_placowki = 1 then nazwisko||'*'
+            else nazwisko end nazwisko
+from pracownicy
+order by 1;
+
+--zad4
+select imie, nazwisko, case when mod(id_pracownika, 2)=0 then to_char(add_months(data_zatrudnienia, 3),'DD/MM/YYYY') 
+                            else to_char(add_months(data_zatrudnienia, 6),'DD/MM/YYYY') end "DATA SZKOLENIA"
+from pracownicy
+order by 2,1;
+
+--zad5
+select nazwa, avg(pensja) œrednia_pensja
+from pracownicy join placowki using(id_placowki)
+group by nazwa
+order by 1;
+
+select nazwa, avg(pensja) œrednia_pensja
+from pracownicy join placowki using(id_placowki)
+group by rollup(nazwa)
+order by 1;
+
+--zad6
+select to_char(data_urodzenia, 'fmmonth') miesiac, count(id_pracownika) "LICZBA OSÓB"
+from pracownicy
+group by rollup(to_char(data_urodzenia, 'fmmonth'))
+order by 2;
+
+--zad7
+select zawod, plec, avg(pensja) srednia_pensja
+from pracownicy
+group by (zawod, plec)
+order by 1,2;
+
+select zawod, plec, avg(pensja) srednia_pensja
+from pracownicy
+group by grouping sets(zawod, (zawod, plec), ())
+order by 1,2;
+
+select zawod, plec, avg(pensja) srednia_pensja
+from pracownicy
+group by grouping sets(zawod, (zawod, plec), plec, ())
+order by 1,2;
+
+--zad8
+select poziom, nazwa, count(id_pracownika)
+from pracownicy join placowki using(id_placowki) join wyksztalcenie using(id_wyksztalcenia)
+group by grouping sets(poziom, (poziom, nazwa), ())
+order by 1,2;
+
+select poziom, nazwa, count(id_pracownika)
+from pracownicy join placowki using(id_placowki) join wyksztalcenie using(id_wyksztalcenia)
+group by grouping sets(nazwa, (poziom, nazwa), ())
+order by 1,2;
+
+select poziom, nazwa, count(id_pracownika)
+from pracownicy join placowki using(id_placowki) join wyksztalcenie using(id_wyksztalcenia)
+group by grouping sets(nazwa, (poziom, nazwa))
+order by 1,2;
+
+--zad9 - useless
+
+--zad10
+select nazwa, zawod, min(pensja)
+from pracownicy join placowki using(id_placowki)
+group by grouping sets(zawod, nazwa)
+order by 3 desc;
+
+--zad11
+select nazwa, plec, count(id_pracownika)
+from pracownicy join uczestnictwo using(id_pracownika) join kursy using(id_kursu)
+where data_zatrudnienia > to_date('15/01/2000','DD/MM/YYYY')
+group by grouping sets(nazwa, (nazwa,plec), plec, ())
+order by 1, 2;
+
+--zad12
+select case when nazwa is not null then nazwa else 'WSZYSTKIE PLACOWKI RAZEM' end, avg(pensja) œrednia_pensja
+from pracownicy join placowki using(id_placowki)
+group by rollup(nazwa)
+order by 1;
+
+
+--DO POCWICZENIA
+--zad13
+select imie, nazwisko, case when add_months(data_zatrudnienia, 15*12 ) <= sysdate then pensja*2
+                            when add_months(data_zatrudnienia, 10*12 ) <= sysdate and add_months(data_zatrudnienia, 15*12 ) >= sysdate then pensja+1000
+                            else pensja+200 end "NOWE PENSJE"
+from pracownicy
+order by 3 desc;
+
+--zad14
+select imie, nazwisko, case when nazwisko like '_O%' then substr(nazwisko, 0,3)||to_char(data_urodzenia, 'YYYY')
+                            else substr(nazwisko, 0,2)||to_char(data_zatrudnienia, 'YYYY') end kod
+from pracownicy
+where nazwisko like '_O%' or nazwisko like '_R%'
+order by 2,1;
+
+--zad15
+select imie, nazwisko, case when poziom = 'WY¯SZE' then to_char(data_urodzenia, 'DD FMMONTH YYYY')
+                            else to_char(pensja) end "Informacje"
+from pracownicy join wyksztalcenie using(id_wyksztalcenia)
+order by 2,1;
+
+--zad16
+select poziom, count(id_pracownika)
+from pracownicy right join wyksztalcenie using(id_wyksztalcenia)
+group by rollup(poziom)
+order by 2;
+
+--zad17
+select nazwa, to_char(data_zatrudnienia, 'YYYY') rok_zatrudnienia, round(avg(pensja),2) "ŒREDNIA PENSJA"
+from pracownicy join placowki using(id_placowki)
+where plec = 'K'
+group by grouping sets(nazwa, (nazwa, to_char(data_zatrudnienia, 'YYYY')), ())
+order by 1,2;
+
+select nazwa, to_char(data_zatrudnienia, 'YYYY') rok_zatrudnienia, round(avg(pensja),2) "ŒREDNIA PENSJA"
+from pracownicy join placowki using(id_placowki)
+where plec = 'K'
+group by grouping sets(nazwa, (nazwa, to_char(data_zatrudnienia, 'YYYY')))
+order by 1,2;
+
+--zad18
+select substr(imie, 0, 1) litera, plec, count(id_pracownika) "LICZBA OSOB"
+from pracownicy
+group by grouping sets(substr(imie, 0, 1), (substr(imie, 0, 1), plec) , plec, ())
+order by 1,2;
+
+--zad19
+select substr(imie, 0, 1) litera, plec, count(id_pracownika) "LICZBA OSOB"
+from pracownicy
+group by grouping sets(substr(imie, 0, 1), plec, ())
+order by 1,2;
+
+--zad20 - nie chce mi sie, ale pewnie robiabym to exstem, skorelowanym albo jakims widokiem 

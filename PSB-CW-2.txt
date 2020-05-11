@@ -1,0 +1,200 @@
+--CW 2
+
+--zad1
+select nazwisko, imie, level
+from pracownicy
+start with id_szefa is null
+connect by id_szefa = prior id_pracownika;
+
+--zad2
+select nazwisko, imie, level
+from pracownicy
+start with nazwisko = 'RACZKOWSKA'
+connect by prior id_pracownika = id_szefa;
+
+select nazwisko, imie, level
+from pracownicy 
+start with nazwisko = 'KLIMCZAK'
+connect by prior id_pracownika = id_szefa;
+
+--zad3
+select nazwisko, imie, level
+from pracownicy
+start with nazwisko = 'ZATORSKI'
+connect by prior id_szefa = id_pracownika
+order by 3,1;
+
+--zad4
+select lpad(' ', level)||nazwisko, imie, level
+from pracownicy
+start with nazwisko = 'ZATORSKI'
+connect by prior id_szefa = id_pracownika
+order by 3,1;
+
+--zad5
+select imie, nazwisko, pensja, nazwa, poziom
+from pracownicy join wyksztalcenie using(id_wyksztalcenia) join placowki using(id_placowki)
+order by 4,2;
+
+--zad6
+select distinct nazwa
+from pracownicy join uczestnictwo using(id_pracownika) join kursy using(id_kursu)
+where to_char(data_urodzenia, 'YYYY') <= to_char(sysdate, 'YYYY')-60
+order by 1;
+
+--zad7
+select nazwa, count(id_pracownika)
+from pracownicy right join placowki using(id_placowki)
+group by nazwa
+order by 1;
+
+--zad8
+select p.nazwisko "NAZWISKO PRACOWNIKA", s.nazwisko "NAZWISKO SZEFA"
+from pracownicy p join pracownicy s on s.id_pracownika=p.id_szefa
+order by 2,1;
+
+--zad9
+select p.nazwisko "NAZWISKO PRACOWNIKA", s.nazwisko "NAZWISKO SZEFA"
+from pracownicy p left join pracownicy s on s.id_pracownika=p.id_szefa
+order by 2,1;
+
+--zad10
+select nazwisko 
+from pracownicy 
+where id_szefa = (select id_pracownika from pracownicy where nazwisko = 'KONECKI')
+order by 1;
+
+select p.nazwisko 
+from pracownicy p join pracownicy s on s.id_pracownika=p.id_szefa 
+where s.nazwisko = 'KONECKI'
+order by 1;
+
+--zad11
+select imie, nazwisko
+from pracownicy p
+where data_zatrudnienia < (select data_zatrudnienia from pracownicy s where p.id_szefa = s.id_pracownika)
+order by 2,1;
+
+--zad12
+select nazwisko, pesel
+from pracownicy s
+where s.id_pracownika in (select id_szefa from pracownicy p where s.id_pracownika = p.id_szefa)
+order by 1;
+
+--zad13
+select imie, nazwisko, plec
+from pracownicy p
+where p.id_pracownika not in (select id_szefa from pracownicy s where p.id_pracownika = s.id_szefa);
+
+select imie, nazwisko, plec
+from pracownicy 
+where id_pracownika not in (select nvl(id_szefa,0) from pracownicy);
+
+--zad14
+select imie, nazwisko
+from pracownicy p
+WHERE EXISTS (SELECT 1 FROM  pracownicy WHERE  id_szefa = p.id_pracownika)
+order by 2,1;
+
+--zad15
+select nazwisko
+from pracownicy 
+where plec='K' and id_pracownika in (select nvl(id_szefa,0) from pracownicy)
+order by 1;
+
+--zad16
+select nazwisko
+from pracownicy 
+where id_szefa in (select id_pracownika from pracownicy where zawod='SPRZEDAWCA' and plec='K')
+order by 1;
+
+--zad17
+select nazwisko, pensja, (select count(id_pracownika) from pracownicy p2 where p1.zawod=p2.zawod) "LICZBA OSOB W ZAWODZIE", round((select avg(pensja) from pracownicy p2 where p1.zawod=p2.zawod),2) "ŒREDNIA PENSJA W ZAWODZIE"
+from pracownicy p1
+order by 1;
+
+
+--DO POCWICZENIA
+--zad18
+select nazwisko, imie, level
+from pracownicy
+where id_pracownika <= 30 or id_pracownika >= 40
+start with id_szefa is null
+connect by id_szefa = prior id_pracownika;
+
+--zad19
+select nazwisko, level
+from pracownicy 
+start with id_szefa is null
+connect by prior id_pracownika = id_szefa and id_pracownika <> 18
+order by 2;
+
+--zad20
+select nazwisko, imie, level
+from pracownicy
+where plec='M'
+start with id_szefa is null
+connect by id_szefa = prior id_pracownika;
+
+
+--DODATKOWE
+--zad21
+select nazwa, count(id_pracownika)
+from kursy lef join uczestnictwo using(id_kursu) join pracownicy using(id_pracownika)
+group by nazwa
+order by 1;
+
+--zad22 - tego nie umiem 
+
+--zad23
+select nazwisko, imie
+from pracownicy p
+where pensja > (select pensja from pracownicy s where s.id_pracownika = p.id_szefa);
+
+--zad24
+select nazwisko 
+from pracownicy p
+where id_szefa = (select id_pracownika from pracownicy s where p.id_szefa = s.id_pracownika and (zawod = 'SPRZEDAWCA' or zawod='KASJER'))
+order by 1;
+
+--zad25
+select distinct zawod
+from pracownicy s
+where id_pracownika in (select nvl(id_szefa,0) from pracownicy);
+
+--zad26
+select count(distinct zawod) ile
+from pracownicy s
+where id_pracownika in (select nvl(id_szefa,0) from pracownicy);
+
+--zad27
+select nazwisko
+from pracownicy 
+where id_pracownika in (select nvl(id_szefa,0) from pracownicy) and zawod <> 'SPRZEDAWCA';
+
+--zad28
+select avg(pensja)
+from pracownicy 
+where id_pracownika in (select nvl(id_szefa,0) from pracownicy) and zawod <> 'SPRZEDAWCA';
+
+--zad29
+select imie, nazwisko, to_char(data_zatrudnienia, 'DD MON YYYY') "DATA ZATRUDNIENIA"
+from pracownicy p
+where id_szefa = (select id_pracownika from pracownicy where nazwisko = 'RADOMSKA')
+order by to_char(data_zatrudnienia, 'YYYY MM DD') desc;
+
+--zad30
+select imie, nazwisko, pesel
+from pracownicy
+where id_pracownika <> 11
+start with id_pracownika = 11
+connect by prior id_pracownika = id_szefa
+order by 2, 1;
+
+--zad31
+select imie, nazwisko, pesel, sys_connect_by_path(nazwisko, '/') Œcie¿ka
+from pracownicy 
+where id_pracownika <> 11
+start with id_pracownika = 11
+connect by prior id_pracownika = id_szefa
+order by 2, 1; 
